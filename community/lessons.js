@@ -21,7 +21,7 @@ const catalog = [
  ['picker','公平点名 · 不重复抽取','班级管理','通用','输入名单，不重复抽取，显示本轮剩余人数。','课堂点名'],
  ['units','生活中的单位换算','其他','通用','在长度、质量与时间单位之间换算，显示计算过程。','单位换算'],
  ['solenoid','右手螺旋定则 · 手势操控实验','物理','初中','用右手手势或屏幕控制线圈，观察电流方向和螺线管内部磁场方向。','磁场与右手定则']
-].map((x,i)=>({id:x[0],title:x[1],subject:x[2],grade:x[3],description:x[4],topic:x[5],type:i===17?'教师工具':i===6||i===16?'课堂互动':'教学演示',glyph:['∿','H₂O','ƒ(x)','♥','◐','山','Aa','⌛','◎','♫','◉','◷','▥','△','◌','❄','★','☷','↔'][i],price:0,author:'智教原创示例',uses:0,rating:0,created:1788883200000-i*1000,available:true,builtin:true}));
+].map((x,i)=>({id:x[0],title:x[1],subject:x[2],grade:x[3],description:x[4],topic:x[5],type:i===17?'教师工具':i===6||i===16?'课堂互动':'教学演示',glyph:['∿','H₂O','ƒ(x)','♥','◐','山','Aa','⌛','◎','♫','◉','◷','▥','△','◌','❄','★','☷','↔'][i],price:0,author:'智教原创示例',uses:0,rating:0,created:1788883200000-i*1000,available:true,builtin:x[0]!=='solenoid',link:x[0]==='solenoid'?'solenoid.html':''}));
 
 // 已接入的完整三维课件：不是单文件活动，而是 dist/earth/ 下的多文件项目，按链接打开。
 catalog.push({
