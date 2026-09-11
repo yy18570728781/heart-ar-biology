@@ -5,7 +5,8 @@ setTimeout(() => {
     if (!r || !r.available) { toast('该课程内容暂未接入。'); return; }
     trials[r.id] = (trials[r.id] || 0) + 1;
     localStorage.setItem('community-trials', JSON.stringify(trials));
-    open(`<div class="viewerbar"><b>▣ ${esc(r.title)}</b><span>试用中 · 鼠标、触屏和键盘都可操作</span><button data-download>↓ 下载离线课件</button><button data-close>× 关闭</button></div><iframe title="课件预览" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>`, 'viewer');
+    const local = !!r.link;
+    open(`<div class="viewerbar"><b>▣ ${esc(r.title)}</b><span>试用中 · 鼠标、触屏和键盘都可操作</span><button data-download>↓ 下载离线课件</button><button data-close>× 关闭</button></div><iframe title="课件预览" sandbox="allow-scripts${local ? ' allow-same-origin' : ''}" allow="camera; microphone; fullscreen" referrerpolicy="no-referrer"></iframe>`, 'viewer');
     const frame = modal.querySelector('iframe');
     if (r.builtin) frame.srcdoc = Lessons.html(r.id);
     else if (r.file && /\.html?$/i.test(r.file.name)) frame.srcdoc = await r.file.text();
