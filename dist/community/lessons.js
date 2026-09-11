@@ -19,8 +19,31 @@ const catalog = [
  ['water','水的三态 · 温度探索','科学','小学','调整温度，观察常压下的冰、水和水蒸气示意。','物态变化'],
  ['challenge','科学知识挑战','课堂小游戏','通用','完成三道基础科学题，获得即时解析与成绩。','课堂抢答'],
  ['picker','公平点名 · 不重复抽取','班级管理','通用','输入名单，不重复抽取，显示本轮剩余人数。','课堂点名'],
- ['units','生活中的单位换算','其他','通用','在长度、质量与时间单位之间换算，显示计算过程。','单位换算']
+ ['units','生活中的单位换算','其他','通用','在长度、质量与时间单位之间换算，显示计算过程。','单位换算'],
+ ['solenoid','右手螺旋定则 · 手势操控实验','物理','初中','用右手手势或屏幕控制线圈，观察电流方向和螺线管内部磁场方向。','磁场与右手定则']
 ].map((x,i)=>({id:x[0],title:x[1],subject:x[2],grade:x[3],description:x[4],topic:x[5],type:i===17?'教师工具':i===6||i===16?'课堂互动':'教学演示',glyph:['∿','H₂O','ƒ(x)','♥','◐','山','Aa','⌛','◎','♫','◉','◷','▥','△','◌','❄','★','☷','↔'][i],price:0,author:'智教原创示例',uses:0,rating:0,created:1788883200000-i*1000,available:true,builtin:true}));
+
+// 已接入的完整三维课件：不是单文件活动，而是 dist/earth/ 下的多文件项目，按链接打开。
+catalog.push({
+  id:'earth-ar',
+  title:'地球模型 · AR 手势地理实验室',
+  subject:'地理',
+  grade:'初中',
+  type:'教学演示',
+  topic:'地球与地图',
+  glyph:'🌐',
+  description:'三维地球：张开手掌推动旋转、捏合缩放；用食指指认某处，地面会像盖子一样翻开，露出当地的地形与气候。含 12 个真实地标，没有摄像头时鼠标触控同样可用。',
+  price:0,
+  author:'智教原创课件',
+  uses:0,
+  rating:0,
+  created:1788883300000,
+  available:true,
+  builtin:false,
+  link:'../earth/index.html',
+  coverSrc:'../earth/preview.png',
+  camera:true
+});
 
 // Each activity runs in its own sandboxed iframe or standalone downloaded HTML.
 function run(id) {
@@ -36,7 +59,19 @@ function run(id) {
  function select(name,values){let l=document.createElement('label');l.className='control';l.textContent=name;let s=document.createElement('select');for(const v of values){let o=document.createElement('option');o.value=v;o.textContent=v;s.append(o)}l.append(s);controls.append(l);return s}
  function inputArea(value){const t=document.createElement('textarea');t.setAttribute('aria-label','输入内容');t.value=value;controls.append(t);return t}
  function tiles(items){stage.innerHTML='<div class="tiles"></div>';items.forEach(item=>{const b=document.createElement('button');b.textContent=item.text;b.onclick=()=>item.click(b);stage.firstChild.append(b)})}
- if(id==='pendulum'){
+ if(id==='solenoid'){
+  let clockwise=true,rot=0,scale=1,handLoop=false,stream=null,landmarker=null,lastX=null;
+  stage.className='solenoid-stage';
+  if(!document.querySelector('#solenoid-style')){const style=document.createElement('style');style.id='solenoid-style';style.textContent=`.solenoid-stage{position:relative!important;min-height:430px!important;background:radial-gradient(circle at 50% 45%,#203b60,#071323 75%)!important;touch-action:none}.solenoid-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.27;transform:scaleX(-1)}.coil-wrap{--rot:0deg;--scale:1;position:relative;width:440px;height:245px;max-width:92vw;transform:rotateY(var(--rot)) scale(var(--scale));transition:transform .13s ease}.solenoid-coil{position:absolute;inset:34px 18px;border-radius:120px;background:linear-gradient(90deg,#365c82,#8bb4d4,#24476b);box-shadow:inset 0 0 42px #071323,0 25px 50px #0008}.solenoid-coil i{position:absolute;left:calc(17px + var(--i)*48px);top:-15px;width:51px;height:205px;border:7px solid #f2b94b;border-left-color:#ffe09b;border-right-color:#b65d12;border-radius:50%;box-shadow:0 0 8px #ffbd4c}.field-arrow{position:absolute;top:95px;color:#5de0ce;font-size:51px;text-shadow:0 0 20px #5de0ce;z-index:2}.a1{left:90px}.a2{left:196px}.a3{left:302px}.pole{position:absolute;top:103px;z-index:3;width:41px;height:41px;display:grid;place-items:center;border-radius:50%;background:#f65065;color:#fff;font-weight:800;box-shadow:0 0 15px #ff7990}.pole.left{left:-5px}.pole.right{right:-5px;background:#347eea}.cam-label{position:absolute;top:16px;left:16px;z-index:5;padding:7px 12px;border-radius:14px;background:#08172cdd;color:#bceeff;font-size:13px}.gesture-guide{position:absolute;bottom:15px;z-index:4;max-width:90%;padding:8px 13px;border-radius:12px;background:#08172ccc;color:#dceaff;font-size:13px}`;document.head.append(style)}
+  stage.innerHTML=`<video id="camera" autoplay muted playsinline></video><div class="cam-label" id="cam-label">屏幕控制模式</div><div class="coil-wrap" id="coil-wrap"><div class="solenoid-coil">${Array.from({length:9},(_,i)=>`<i style="--i:${i}"></i>`).join('')}</div><div class="field-arrow a1">↑</div><div class="field-arrow a2">↑</div><div class="field-arrow a3">↑</div><div class="pole left">${clockwise?'S':'N'}</div><div class="pole right">${clockwise?'N':'S'}</div></div><div class="gesture-guide">右手食指上下：切换电流方向　拇指与食指捏合：缩放　左右移动：旋转</div>`;
+  const wrap=$('#coil-wrap'),cam=$('#camera'),camLabel=$('#cam-label');
+  function draw(){wrap.style.setProperty('--rot',rot+'deg');wrap.style.setProperty('--scale',scale);stage.querySelectorAll('.field-arrow').forEach(a=>a.textContent=clockwise?'→':'←');stage.querySelector('.pole.left').textContent=clockwise?'S':'N';stage.querySelector('.pole.right').textContent=clockwise?'N':'S';say(`电流从${clockwise?'左端绕向右端':'右端绕向左端'}。右手四指弯向电流方向，拇指所指即螺线管内部磁场方向（图中${clockwise?'向右':'向左'}）。`)}
+  function controls(){button('↺ 左旋',()=>{rot-=18;draw()});button('↻ 右旋',()=>{rot+=18;draw()});button('切换电流方向',()=>{clockwise=!clockwise;draw()});const z=range('模型缩放',.65,1.55,1,.05);z.oninput=()=>{scale=+z.value;draw()};button('启动摄像头手势控制',startCamera);button('关闭摄像头',stopCamera)}
+  async function startCamera(){if(!navigator.mediaDevices?.getUserMedia){say('当前浏览器不支持摄像头接口，请使用屏幕控制模式。');return}try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});cam.srcObject=stream;camLabel.textContent='正在载入右手识别模型…';const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22');const files=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm');landmarker=await vision.HandLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',delegate:'GPU'},runningMode:'VIDEO',numHands:1});handLoop=true;camLabel.textContent='右手识别中';track();say('已启动摄像头。把右手放入画面：食指向上/下切换方向；拇指与食指捏合调节缩放；手掌左右移动旋转模型。')}catch(err){camLabel.textContent='摄像头未启动';say('无法启用摄像头或识别模型。请允许摄像头权限，并确认网络可访问识别模型；屏幕控制仍可使用。')}}
+  function track(){if(!handLoop||!landmarker||cam.readyState<2){if(handLoop)requestAnimationFrame(track);return}const res=landmarker.detectForVideo(cam,performance.now()),p=res.landmarks?.[0];if(p){const idx=p[8],pip=p[6],thumb=p[4],wrist=p[0],pinch=Math.hypot(idx.x-thumb.x,idx.y-thumb.y);if(idx.y<pip.y-.05)clockwise=true;else if(idx.y>pip.y+.05)clockwise=false;scale=Math.max(.65,Math.min(1.55,1.55-pinch*2.4));if(lastX!==null)rot+=(wrist.x-lastX)*180;lastX=wrist.x;camLabel.textContent=`右手已识别 · 捏合 ${pinch<.08?'放大':'缩放'} · ${clockwise?'磁场向右':'磁场向左'}`;draw()}else{lastX=null;camLabel.textContent='请将右手置于画面内'}requestAnimationFrame(track)}
+  function stopCamera(){handLoop=false;lastX=null;landmarker?.close?.();landmarker=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;cam.srcObject=null;camLabel.textContent='屏幕控制模式';say('摄像头已关闭，仍可通过按钮、滑块、鼠标和触屏操作模型。')}
+  const pointer=e=>{if(e.buttons||e.type==='pointerdown'){rot+=(e.movementX||0)*.7;draw()}};stage.addEventListener('pointermove',pointer);stage.addEventListener('pointerdown',pointer);stage.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.65,Math.min(1.55,scale-e.deltaY*.001));draw()},{passive:false});controls();draw();
+ } else if(id==='pendulum'){
   const L=range('摆长 / m',.2,2,1,.1), amp=range('初始角度 / °',2,12,8);let t=0,play=true;
   const p=button('暂停',()=>{play=!play;p.textContent=play?'暂停':'继续'});button('重新释放',()=>t=0);
   animate((_,dt)=>{if(play)t+=dt;const period=2*Math.PI*Math.sqrt(+L.value/9.81),a=+amp.value*Math.PI/180*Math.cos(t*2*Math.PI/period),len=80+100*+L.value,x=320+len*Math.sin(a),y=55+len*Math.cos(a);stage.innerHTML=svg(line(250,55,390,55)+line(320,55,x,y)+circle(x,y,23,'#5de0ce')+circle(320,55,5,'white')+label(320,370,`周期 T ≈ ${period.toFixed(2)} 秒`));say('小角度、无阻力近似：摆长变为原来的 4 倍，周期变为 2 倍。质量不出现在周期公式中。')});
