@@ -21,8 +21,11 @@
     <div class="toolbar"><button id="left">↺ 左旋</button><button id="right">↻ 右旋</button><button id="reverse">⇄ 切换电流</button><button id="cameraButton" class="primary">✋ 启动右手手势</button><button id="reset">◎ 复位</button></div>
     <div class="hud legend"><i class="south"></i>S 极　<i class="north"></i>N 极　青色箭头：内部磁场</div>
   </main>
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js"}}
+  </script>
   <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js';
+    import * as THREE from 'three';
     import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/loaders/GLTFLoader.js';
     const stage=document.querySelector('#stage'), status=document.querySelector('#status'), video=document.querySelector('#camera'), loaderBox=document.querySelector('#loader'), bar=document.querySelector('#bar'), percent=document.querySelector('#percent'), loadDetail=document.querySelector('#loadDetail');
     const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100);camera.position.set(0,1.2,10);
