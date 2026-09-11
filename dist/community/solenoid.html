@@ -9,10 +9,14 @@
   </style>
 </head>
 <body>
+  <style>
+    .loader{position:absolute;z-index:4;left:50%;top:50%;width:min(420px,78vw);transform:translate(-50%,-50%);padding:22px;border:1px solid #5b87af;border-radius:18px;background:#08182bdf;backdrop-filter:blur(14px);box-shadow:0 18px 60px #0009;transition:opacity .5s,transform .5s}.loader.done{opacity:0;transform:translate(-50%,-44%);pointer-events:none}.loader b{display:flex;justify-content:space-between;font-size:15px}.loader small{display:block;margin-top:8px;color:#a8c7e5}.track{height:10px;margin-top:14px;overflow:hidden;border-radius:999px;background:#1e3652}.bar{width:2%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#2b8cff,#5de0ce);box-shadow:0 0 16px #5de0ce;transition:width .2s ease}
+  </style>
   <main id="stage">
     <video id="camera" autoplay muted playsinline></video>
     <div class="hud title"><b>右手螺旋定则 · 3D 实验</b><small>真实 Blender 模型 · 拖动旋转 · 滚轮缩放</small></div>
-    <div class="hud status" id="status">正在加载 Blender 三维模型…</div>
+    <div class="hud status" id="status">正在连接 Blender 三维模型…</div>
+    <div class="loader" id="loader" role="status"><b><span>正在加载 3D 模型</span><span id="percent">0%</span></b><div class="track"><div class="bar" id="bar"></div></div><small id="loadDetail">准备下载模型文件…</small></div>
     <div class="hud hint">屏幕模式：拖动旋转，滚轮/双指缩放。<br>手势模式：食指上下切换磁场方向，捏合缩放，左右移动旋转。</div>
     <div class="toolbar"><button id="left">↺ 左旋</button><button id="right">↻ 右旋</button><button id="reverse">⇄ 切换电流</button><button id="cameraButton" class="primary">✋ 启动右手手势</button><button id="reset">◎ 复位</button></div>
     <div class="hud legend"><i class="south"></i>S 极　<i class="north"></i>N 极　青色箭头：内部磁场</div>
@@ -20,12 +24,12 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js';
     import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/loaders/GLTFLoader.js';
-    const stage=document.querySelector('#stage'), status=document.querySelector('#status'), video=document.querySelector('#camera');
+    const stage=document.querySelector('#stage'), status=document.querySelector('#status'), video=document.querySelector('#camera'), loaderBox=document.querySelector('#loader'), bar=document.querySelector('#bar'), percent=document.querySelector('#percent'), loadDetail=document.querySelector('#loadDetail');
     const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100);camera.position.set(0,1.2,10);
     const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;stage.prepend(renderer.domElement);
     scene.add(new THREE.HemisphereLight(0xb7dcff,0x071323,2.2));const key=new THREE.DirectionalLight(0xffffff,3);key.position.set(4,6,7);scene.add(key);const rim=new THREE.DirectionalLight(0xff7a35,2);rim.position.set(-5,2,-4);scene.add(rim);
     let model, direction=1, targetRotation=0, scale=1, dragging=false, previousX=0, handLandmarker, handActive=false, stream, lastPalm;
-    const loader=new GLTFLoader();loader.load('assets/solenoid-hand-control.glb',gltf=>{model=gltf.scene;model.rotation.set(-.16,-.35,0);scene.add(model);status.textContent='模型已就绪：拖动旋转、滚轮缩放，或启动右手手势。'},undefined,()=>status.textContent='模型加载失败，请检查网络或刷新页面。');
+    const loader=new GLTFLoader();loader.load('assets/solenoid-hand-control.glb',gltf=>{model=gltf.scene;model.rotation.set(-.16,-.35,0);scene.add(model);bar.style.width='100%';percent.textContent='100%';loadDetail.textContent='模型已就绪，正在启动交互实验…';status.textContent='模型已就绪：拖动旋转、滚轮缩放，或启动右手手势。';setTimeout(()=>loaderBox.classList.add('done'),800)},event=>{const loaded=event.loaded||0,total=event.total||0;if(total){const value=Math.min(99,Math.round(loaded/total*100));bar.style.width=value+'%';percent.textContent=value+'%';loadDetail.textContent=`已下载 ${(loaded/1024/1024).toFixed(2)} / ${(total/1024/1024).toFixed(2)} MB`;}else{bar.style.width='55%';percent.textContent='加载中';loadDetail.textContent=`已下载 ${(loaded/1024/1024).toFixed(2)} MB，正在读取模型…`;}},()=>{loaderBox.classList.remove('done');bar.style.background='#ef5b6c';loadDetail.textContent='模型加载失败，请刷新页面后重试。';status.textContent='模型加载失败，请检查网络或刷新页面。'});
     function apply(){if(!model)return;model.rotation.y+=(targetRotation-model.rotation.y)*.12;model.scale.setScalar(scale);}
     function reverse(){direction*=-1;if(!model)return;const arrows=model.children.filter(o=>o.name.includes('Magnetic field'));arrows.forEach(o=>o.rotation.x=direction===1?0:Math.PI);status.textContent=`电流方向已切换：右手拇指所指的内部磁场现在${direction===1?'由 S 指向 N（向右）':'由 N 指向 S（向左）'}。`;}
     document.querySelector('#left').onclick=()=>targetRotation-=.35;document.querySelector('#right').onclick=()=>targetRotation+=.35;document.querySelector('#reverse').onclick=reverse;document.querySelector('#reset').onclick=()=>{targetRotation=-.35;scale=1;direction=1;status.textContent='已复位到默认视角。'};
